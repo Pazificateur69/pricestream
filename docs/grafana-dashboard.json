@@ -1,0 +1,86 @@
+{
+  "title": "pricestream",
+  "schemaVersion": 38,
+  "tags": ["pricestream", "crypto", "liquidity"],
+  "timezone": "browser",
+  "refresh": "5s",
+  "time": { "from": "now-30m", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Last mid price",
+      "datasource": { "type": "prometheus", "uid": "prom" },
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 5 },
+      "targets": [
+        { "expr": "pricestream_last_mid_price", "legendFormat": "{{instrument}}" }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Consolidated rate (per minute)",
+      "datasource": { "type": "prometheus", "uid": "prom" },
+      "gridPos": { "x": 6, "y": 0, "w": 18, "h": 8 },
+      "targets": [
+        {
+          "expr": "rate(pricestream_consolidated_total[1m])",
+          "legendFormat": "{{instrument}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Spread (bps)",
+      "datasource": { "type": "prometheus", "uid": "prom" },
+      "gridPos": { "x": 0, "y": 5, "w": 6, "h": 5 },
+      "targets": [
+        { "expr": "pricestream_last_spread_bps", "legendFormat": "{{instrument}}" }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Fetch failures (per minute)",
+      "datasource": { "type": "prometheus", "uid": "prom" },
+      "gridPos": { "x": 6, "y": 8, "w": 9, "h": 8 },
+      "targets": [
+        {
+          "expr": "rate(pricestream_quotes_failed_total[1m])",
+          "legendFormat": "{{instrument}}/{{source}}"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Arbitrage opportunities (per minute)",
+      "datasource": { "type": "prometheus", "uid": "prom" },
+      "gridPos": { "x": 15, "y": 8, "w": 9, "h": 8 },
+      "targets": [
+        {
+          "expr": "rate(pricestream_arbitrage_detected_total[1m])",
+          "legendFormat": "{{instrument}} buy:{{buy_venue}} sell:{{sell_venue}}"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Fetch round duration (p95)",
+      "datasource": { "type": "prometheus", "uid": "prom" },
+      "gridPos": { "x": 0, "y": 16, "w": 24, "h": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(pricestream_fetch_round_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95"
+        },
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(pricestream_fetch_round_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p50"
+        }
+      ]
+    }
+  ]
+}

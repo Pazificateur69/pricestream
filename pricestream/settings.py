@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     "django_celery_beat",
     "channels",
     "corsheaders",
+    "drf_spectacular",
     "apps.pricing",
 ]
 
@@ -115,6 +116,24 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 50,
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {"anon": "60/min", "user": "600/min"},
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "pricestream API",
+    "DESCRIPTION": (
+        "A simplified institutional crypto pricing & liquidity service. "
+        "Aggregates Binance / Coinbase / Kraken, computes a consolidated mid, "
+        "streams every quote through Kafka, and broadcasts via WebSocket."
+    ),
+    "VERSION": "0.1.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
 }
 
 # ----- Redis -----
@@ -165,6 +184,7 @@ KAFKA_QUOTES_TOPIC = config("KAFKA_QUOTES_TOPIC", default="quotes")
 
 # ----- Pricing -----
 INSTRUMENTS = config("INSTRUMENTS", default="BTC-USD,ETH-USD,SOL-USD", cast=Csv())
+MAX_QUOTE_AGE_SECONDS = config("MAX_QUOTE_AGE_SECONDS", default=30, cast=int)
 
 # ----- CORS -----
 CORS_ALLOW_ALL_ORIGINS = DEBUG

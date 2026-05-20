@@ -119,3 +119,36 @@ class OHLCBar(models.Model):
 
     def __str__(self) -> str:
         return f"{self.instrument.symbol} {self.interval}@{self.bucket_start:%Y-%m-%d %H:%M}"
+
+
+class ArbitrageOpportunity(models.Model):
+    """Cross-venue arbitrage signal.
+
+    Triggered when, on a single round of fetches, the best bid on one venue
+    is *strictly higher* than the best ask on another venue (book crossed
+    across exchanges). In an LP context this is what a market-maker captures
+    by buying on the cheap venue and immediately selling on the rich one.
+    """
+
+    instrument = models.ForeignKey(
+        Instrument, on_delete=models.CASCADE, related_name="arbitrage_opportunities"
+    )
+    buy_venue = models.CharField(max_length=20)
+    buy_price = models.DecimalField(max_digits=24, decimal_places=10)
+    sell_venue = models.CharField(max_length=20)
+    sell_price = models.DecimalField(max_digits=24, decimal_places=10)
+    spread = models.DecimalField(max_digits=24, decimal_places=10)
+    spread_bps = models.DecimalField(max_digits=12, decimal_places=4)
+    timestamp = models.DateTimeField(db_index=True, default=timezone.now)
+
+    class Meta:
+        ordering = ("-timestamp",)
+        indexes = [
+            models.Index(fields=["instrument", "-timestamp"]),
+        ]
+
+    def __str__(self) -> str:
+        return (
+            f"{self.instrument.symbol} BUY@{self.buy_venue} {self.buy_price} → "
+            f"SELL@{self.sell_venue} {self.sell_price} ({self.spread_bps} bps)"
+        )

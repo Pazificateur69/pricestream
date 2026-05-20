@@ -28,6 +28,20 @@ class QuoteFactory(factory.django.DjangoModelFactory):
     timestamp = factory.LazyFunction(timezone.now)
 
 
+class ArbitrageOpportunityFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = "pricing.ArbitrageOpportunity"
+
+    instrument = factory.SubFactory(InstrumentFactory)
+    buy_venue = "binance"
+    buy_price = Decimal("50000")
+    sell_venue = "coinbase"
+    sell_price = Decimal("50050")
+    spread = Decimal("50")
+    spread_bps = Decimal("10.0000")
+    timestamp = factory.LazyFunction(timezone.now)
+
+
 class ConsolidatedPriceFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = ConsolidatedPrice

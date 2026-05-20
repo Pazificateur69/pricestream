@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>pricestream — live consolidated tape</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0b0f17;
+      --card: #131a26;
+      --border: #1f2a3a;
+      --fg: #e6edf3;
+      --muted: #8b95a7;
+      --up: #16c98d;
+      --down: #ef4444;
+      --accent: #6ea8fe;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    header { padding: 24px 32px; border-bottom: 1px solid var(--border); display: flex; align-items: baseline; justify-content: space-between; }
+    header h1 { font-size: 18px; margin: 0; letter-spacing: 0.04em; }
+    header .sub { color: var(--muted); font-size: 12px; }
+    main { padding: 24px 32px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; transition: border-color .2s; }
+    .card.live { border-color: var(--accent); }
+    .symbol { font-size: 14px; color: var(--muted); letter-spacing: 0.08em; }
+    .mid { font-size: 32px; font-weight: 600; margin: 8px 0; transition: color .2s; }
+    .mid.up { color: var(--up); }
+    .mid.down { color: var(--down); }
+    .row { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin-top: 4px; }
+    .row .val { color: var(--fg); }
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; background: var(--border); font-size: 11px; color: var(--muted); margin-right: 4px; }
+    footer { padding: 16px 32px; color: var(--muted); font-size: 12px; border-top: 1px solid var(--border); }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>pricestream</h1>
+      <div class="sub">consolidated tape · live</div>
+    </div>
+    <div class="sub">
+      <a href="/api/docs/">/api/docs</a> ·
+      <a href="/metrics/">/metrics</a> ·
+      <a href="/health/">/health</a>
+    </div>
+  </header>
+  <main>
+    <div class="grid" id="cards">
+      {% for symbol in instruments %}
+        <div class="card" id="card-{{ symbol }}" data-symbol="{{ symbol }}">
+          <div class="symbol">{{ symbol }}</div>
+          <div class="mid" id="mid-{{ symbol }}">—</div>
+          <div class="row"><span>bid</span><span class="val" id="bid-{{ symbol }}">—</span></div>
+          <div class="row"><span>ask</span><span class="val" id="ask-{{ symbol }}">—</span></div>
+          <div class="row"><span>sources</span><span class="val" id="src-{{ symbol }}">—</span></div>
+          <div class="row"><span>last tick</span><span class="val" id="ts-{{ symbol }}">—</span></div>
+        </div>
+      {% empty %}
+        <div class="card"><div class="symbol">no instruments yet — start the celery worker.</div></div>
+      {% endfor %}
+    </div>
+  </main>
+  <footer>
+    pricestream · django + drf + celery + kafka + channels · <a href="https://github.com/Pazificateur69/pricestream">source</a>
+  </footer>
+
+  <script>
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    const cards = document.querySelectorAll('[data-symbol]');
+    const lastMid = {};
+    cards.forEach(card => {
+      const symbol = card.dataset.symbol;
+      const ws = new WebSocket(`${proto}://${location.host}/ws/quotes/${symbol}/`);
+      ws.addEventListener('open', () => card.classList.add('live'));
+      ws.addEventListener('close', () => card.classList.remove('live'));
+      ws.addEventListener('message', (e) => {
+        const data = JSON.parse(e.data);
+        const mid = parseFloat(data.mid);
+        const midEl = document.getElementById('mid-' + symbol);
+        midEl.textContent = mid.toLocaleString(undefined, { maximumFractionDigits: 2 });
+        if (lastMid[symbol] !== undefined) {
+          midEl.classList.remove('up', 'down');
+          midEl.classList.add(mid >= lastMid[symbol] ? 'up' : 'down');
+        }
+        lastMid[symbol] = mid;
+        document.getElementById('bid-' + symbol).textContent = parseFloat(data.bid).toLocaleString(undefined, { maximumFractionDigits: 4 });
+        document.getElementById('ask-' + symbol).textContent = parseFloat(data.ask).toLocaleString(undefined, { maximumFractionDigits: 4 });
+        document.getElementById('src-' + symbol).innerHTML = (data.sources || []).map(s => `<span class="pill">${s}</span>`).join('');
+        document.getElementById('ts-' + symbol).textContent = new Date(data.ts).toLocaleTimeString();
+      });
+    });
+  </script>
+</body>
+</html>

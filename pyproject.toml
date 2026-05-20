@@ -17,6 +17,7 @@ ignore = ["E501"]
 DJANGO_SETTINGS_MODULE = "pricestream.settings"
 python_files = ["tests.py", "test_*.py", "*_tests.py"]
 addopts = "-ra --strict-markers --tb=short"
+asyncio_mode = "auto"
 filterwarnings = [
     "ignore::DeprecationWarning",
 ]

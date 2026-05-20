@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import ConsolidatedPrice, Instrument, OHLCBar, Quote
+from .models import ArbitrageOpportunity, ConsolidatedPrice, Instrument, OHLCBar, Quote
 
 
 class InstrumentSerializer(serializers.ModelSerializer):
@@ -42,4 +42,22 @@ class OHLCBarSerializer(serializers.ModelSerializer):
             "close",
             "volume",
             "tick_count",
+        )
+
+
+class ArbitrageOpportunitySerializer(serializers.ModelSerializer):
+    instrument = serializers.SlugRelatedField(slug_field="symbol", read_only=True)
+
+    class Meta:
+        model = ArbitrageOpportunity
+        fields = (
+            "id",
+            "instrument",
+            "buy_venue",
+            "buy_price",
+            "sell_venue",
+            "sell_price",
+            "spread",
+            "spread_bps",
+            "timestamp",
         )

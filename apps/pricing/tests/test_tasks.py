@@ -37,6 +37,7 @@ def test_fetch_quotes_writes_quotes_and_consolidates(settings):
 
     assert result["quotes"] == 3
     assert result["consolidated"] == 1
+    assert result["arbitrages"] == 0
     assert Quote.objects.count() == 3
     cp = ConsolidatedPrice.objects.get()
     assert cp.bid == Decimal("100.5")

@@ -1,13 +1,17 @@
 from __future__ import annotations
 
-from django.shortcuts import get_object_or_404
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, render
+from django.views.decorators.http import require_GET
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 
-from .models import ConsolidatedPrice, Instrument, OHLCBar, Quote
+from .models import ArbitrageOpportunity, ConsolidatedPrice, Instrument, OHLCBar, Quote
 from .serializers import (
+    ArbitrageOpportunitySerializer,
     ConsolidatedPriceSerializer,
     InstrumentSerializer,
     OHLCBarSerializer,
@@ -16,6 +20,8 @@ from .serializers import (
 
 
 class InstrumentViewSet(viewsets.ReadOnlyModelViewSet):
+    """List supported instruments and their metadata."""
+
     queryset = Instrument.objects.all()
     serializer_class = InstrumentSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
@@ -24,6 +30,8 @@ class InstrumentViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class QuoteViewSet(viewsets.ReadOnlyModelViewSet):
+    """Historic raw quotes and the latest consolidated mid-price."""
+
     queryset = Quote.objects.select_related("instrument").all()
     serializer_class = QuoteSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
@@ -55,6 +63,8 @@ class QuoteViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class OHLCViewSet(viewsets.ReadOnlyModelViewSet):
+    """OHLC bars built by the Kafka consumer."""
+
     queryset = OHLCBar.objects.select_related("instrument").all()
     serializer_class = OHLCBarSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
@@ -70,3 +80,32 @@ class OHLCViewSet(viewsets.ReadOnlyModelViewSet):
         if interval:
             qs = qs.filter(interval=interval)
         return qs
+
+
+class ArbitrageOpportunityViewSet(viewsets.ReadOnlyModelViewSet):
+    """Detected cross-venue arbitrage opportunities."""
+
+    queryset = ArbitrageOpportunity.objects.select_related("instrument").all()
+    serializer_class = ArbitrageOpportunitySerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    filterset_fields = ("buy_venue", "sell_venue")
+    ordering_fields = ("timestamp", "spread_bps")
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        symbol = self.request.query_params.get("instrument")
+        if symbol:
+            qs = qs.filter(instrument__symbol=symbol)
+        return qs
+
+
+@require_GET
+def metrics_view(_request):
+    """Prometheus scrape endpoint."""
+    return HttpResponse(generate_latest(), content_type=CONTENT_TYPE_LATEST)
+
+
+def dashboard(request):
+    """A tiny dashboard that subscribes via WebSocket and ticks live."""
+    instruments = list(Instrument.objects.filter(is_active=True).values_list("symbol", flat=True))
+    return render(request, "pricing/dashboard.html", {"instruments": instruments})
