@@ -33,11 +33,7 @@ jobs:
       - name: Run pytest with coverage
         env:
           DJANGO_SECRET_KEY: ci-secret
-          DJANGO_DEBUG: "0"
-          POSTGRES_HOST: localhost
-          REDIS_URL: redis://localhost:6379/0
-          CELERY_BROKER_URL: redis://localhost:6379/1
-          KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+          DJANGO_DEBUG: "1"
         run: |
           pytest --cov=apps --cov-report=term-missing --cov-report=xml
 

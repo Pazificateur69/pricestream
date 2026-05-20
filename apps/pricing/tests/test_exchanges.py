@@ -18,7 +18,7 @@ class TestBinanceClient:
 
     def test_fetch_parses_response(self):
         with patch(
-            "apps.pricing.exchanges.httpx.get",
+            "apps.pricing.exchanges._session.get",
             return_value=_fake_response({"bidPrice": "50000.5", "askPrice": "50001.2"}),
         ):
             bid, ask = BinanceClient().fetch("BTC-USD")
@@ -26,14 +26,14 @@ class TestBinanceClient:
         assert ask == Decimal("50001.2")
 
     def test_fetch_returns_none_on_error(self):
-        with patch("apps.pricing.exchanges.httpx.get", side_effect=Exception("boom")):
+        with patch("apps.pricing.exchanges._session.get", side_effect=Exception("boom")):
             assert BinanceClient().fetch("BTC-USD") is None
 
 
 class TestCoinbaseClient:
     def test_fetch_parses_top_of_book(self):
         with patch(
-            "apps.pricing.exchanges.httpx.get",
+            "apps.pricing.exchanges._session.get",
             return_value=_fake_response(
                 {"bids": [["50000.0", "1.0", 1]], "asks": [["50001.0", "1.0", 1]]}
             ),
@@ -52,14 +52,14 @@ class TestKrakenClient:
             "error": [],
             "result": {"XXBTZUSD": {"b": ["50000.0", "1", "1"], "a": ["50001.0", "1", "1"]}},
         }
-        with patch("apps.pricing.exchanges.httpx.get", return_value=_fake_response(payload)):
+        with patch("apps.pricing.exchanges._session.get", return_value=_fake_response(payload)):
             bid, ask = KrakenClient().fetch("BTC-USD")
         assert bid == Decimal("50000.0")
         assert ask == Decimal("50001.0")
 
     def test_fetch_returns_none_on_error_payload(self):
         with patch(
-            "apps.pricing.exchanges.httpx.get",
+            "apps.pricing.exchanges._session.get",
             return_value=_fake_response({"error": ["bad pair"], "result": {}}),
         ):
             assert KrakenClient().fetch("BTC-USD") is None

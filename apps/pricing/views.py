@@ -8,6 +8,7 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from .models import ArbitrageOpportunity, ConsolidatedPrice, Instrument, OHLCBar, Quote
 from .serializers import (
@@ -17,6 +18,7 @@ from .serializers import (
     OHLCBarSerializer,
     QuoteSerializer,
 )
+from .stats import compute_rolling_stats
 
 
 class InstrumentViewSet(viewsets.ReadOnlyModelViewSet):
@@ -97,6 +99,28 @@ class ArbitrageOpportunityViewSet(viewsets.ReadOnlyModelViewSet):
         if symbol:
             qs = qs.filter(instrument__symbol=symbol)
         return qs
+
+
+class RollingStatsView(APIView):
+    """`GET /api/stats/?instrument=BTC-USD&window=300`
+
+    Returns rolling stats over the last `window` seconds of consolidated prices:
+    sample count, last/avg/min/max mid, mid stdev, and average spread in bps.
+    """
+
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get(self, request):
+        symbol = request.query_params.get("instrument")
+        if not symbol:
+            return Response({"detail": "instrument query param required."}, status=400)
+        try:
+            window = int(request.query_params.get("window", "300"))
+        except ValueError:
+            return Response({"detail": "window must be an integer."}, status=400)
+        window = max(1, min(window, 86400))
+        instrument = get_object_or_404(Instrument, symbol=symbol)
+        return Response(compute_rolling_stats(instrument, window).as_dict())
 
 
 @require_GET

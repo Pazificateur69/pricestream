@@ -5,6 +5,7 @@ Deployment). Bucketing is done in pure Python — no Kafka Streams / KSQL.
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import signal
@@ -122,8 +123,6 @@ def handle_event(payload: dict) -> None:
     except Exception:
         return
     mid = (bid + ask) / Decimal(2)
-
-    import contextlib
 
     ts_str = payload.get("ts")
     ts = timezone.now()

@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import logging
 import socket
-from urllib.parse import urlparse
 
 from django.conf import settings
 from django.db import connections
@@ -75,7 +74,3 @@ def healthcheck(_request):
 def liveness(_request):
     """Cheap liveness probe — just confirms the process can answer."""
     return JsonResponse({"status": "alive"})
-
-
-# Silence noisy urllib warnings when probes fail.
-_ = urlparse  # keep import in case future probe parses URLs

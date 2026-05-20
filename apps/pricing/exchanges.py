@@ -15,6 +15,10 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_TIMEOUT = httpx.Timeout(5.0, connect=3.0)
 
+# Shared client for HTTP keep-alive across polls. confluent-kafka's producer is
+# thread-safe; so is httpx.Client.
+_session = httpx.Client(timeout=DEFAULT_TIMEOUT, follow_redirects=False)
+
 
 class ExchangeClient(Protocol):
     name: str
@@ -38,7 +42,7 @@ class BinanceClient:
         url = f"{self.base_url}/api/v3/ticker/bookTicker"
         params = {"symbol": self._to_binance_symbol(symbol)}
         try:
-            r = httpx.get(url, params=params, timeout=DEFAULT_TIMEOUT)
+            r = _session.get(url, params=params)
             r.raise_for_status()
             data = r.json()
             return Decimal(data["bidPrice"]), Decimal(data["askPrice"])
@@ -59,7 +63,7 @@ class CoinbaseClient:
     def fetch(self, symbol: str) -> tuple[Decimal, Decimal] | None:
         url = f"{self.base_url}/products/{self._to_coinbase_symbol(symbol)}/book"
         try:
-            r = httpx.get(url, params={"level": 1}, timeout=DEFAULT_TIMEOUT)
+            r = _session.get(url, params={"level": 1})
             r.raise_for_status()
             data = r.json()
             bid = Decimal(data["bids"][0][0])
@@ -86,7 +90,7 @@ class KrakenClient:
         url = f"{self.base_url}/0/public/Ticker"
         params = {"pair": self._to_kraken_symbol(symbol)}
         try:
-            r = httpx.get(url, params=params, timeout=DEFAULT_TIMEOUT)
+            r = _session.get(url, params=params)
             r.raise_for_status()
             payload = r.json()
             if payload.get("error"):
