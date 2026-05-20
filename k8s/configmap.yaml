@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pricestream-config
+  namespace: pricestream
+data:
+  DJANGO_DEBUG: "0"
+  DJANGO_ALLOWED_HOSTS: "*"
+  POSTGRES_DB: "pricestream"
+  POSTGRES_USER: "pricestream"
+  POSTGRES_HOST: "postgres"
+  POSTGRES_PORT: "5432"
+  REDIS_URL: "redis://redis:6379/0"
+  CELERY_BROKER_URL: "redis://redis:6379/1"
+  CELERY_RESULT_BACKEND: "redis://redis:6379/2"
+  KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+  KAFKA_QUOTES_TOPIC: "quotes"
+  FETCH_INTERVAL_SECONDS: "5"
+  INSTRUMENTS: "BTC-USD,ETH-USD,SOL-USD"

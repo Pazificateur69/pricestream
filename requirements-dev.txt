@@ -1,0 +1,8 @@
+-r requirements.txt
+pytest==8.2.1
+pytest-django==4.8.0
+pytest-cov==5.0.0
+pytest-asyncio==0.23.7
+factory-boy==3.3.0
+ruff==0.4.7
+ipython==8.25.0

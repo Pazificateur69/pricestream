@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-worker
+  namespace: pricestream
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: celery-worker }
+  template:
+    metadata:
+      labels: { app: celery-worker }
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/pazificateur69/pricestream:latest
+          args: ["celery-worker"]
+          envFrom:
+            - configMapRef: { name: pricestream-config }
+            - secretRef: { name: pricestream-secret }
+          resources:
+            requests: { cpu: "100m", memory: "256Mi" }
+            limits: { cpu: "500m", memory: "512Mi" }
